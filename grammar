@@ -54,7 +54,7 @@ if [[ $test == 1 ]]
 then
     genome=~/scratch/m4/costseq/hg19.fa   ###skltmp/tl/gram/hg19.fa  todo #\CHANGE MANUALLY
     gencode=/ysm-gpfs/pi/gerstein/from_louise/skltmp/tl/gram/gencode/gencode.v19.cds.bed #\CHANGE 
-    path_funseq=/ysm-gpfs/pi/gerstein/from_louise/skltmp/hg19
+    path_funseq=/ysm-gpfs/pi/gerstein/from_louise/skltmp/hg19/hg19_score.funseq216.bed.bgz
     dpath=/gpfs/ysm/home/sl2373/tools/deepbind
     bed7=~/Upscratch/skltmp/tl/gram/grammar.test/snptest.bed
     geneExpr=~/Upscratch/skltmp/tl/gram/grammar.test/gexpr.test.bed
@@ -267,7 +267,7 @@ do
     ed=`echo $line | awk '{print $3}'`
     ref=`echo $line | awk '{print $4}'`
     var=`echo $line | awk '{print $5}'`
-    tabix -p bed ${path_funseq}/hg19_score.funseq216.bed.bgz ${chr}:${st}-${ed} | awk -v s=$ed '{if($3==s) print $0}' | awk -v s=$st -v f=$ref -v v=$var '{n=split($5,a,"|");for(i=1;i<=n;i++){if((a[i]==v && $4==f) || (a[i]==f && $4==v)) print $0}}'>> $seqdir/$seqname.out/funseq.score.txt
+    tabix -p bed ${path_funseq} ${chr}:${st}-${ed} | awk -v s=$ed '{if($3==s) print $0}' | awk -v s=$st -v f=$ref -v v=$var '{n=split($5,a,"|");for(i=1;i<=n;i++){if((a[i]==v && $4==f) || (a[i]==f && $4==v)) print $0}}'>> $seqdir/$seqname.out/funseq.score.txt
 done < $seqdir/$seqname.out/gram.score.txt
 
 

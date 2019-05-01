@@ -100,7 +100,7 @@ rownames(test.db.mut0)=snp.uniq[,6]
 
 
 ##Filter based on the sample id of gene expression
-print(paste("After filting, only ", length(intersect(unique(snp.input$sampleid), colnames(test.tf.expr))), "of ", length(unique(snp.input$sampleid))," sample left for the prediction",sep=""))
+print(paste("After filting, only ", length(intersect(unique(snp.input$sampleid), colnames(test.tf.expr))), " of ", length(unique(snp.input$sampleid))," sample left for the prediction",sep=""))
 
 snp.input=snp.input[which(snp.input$sampleid %in% colnames(test.tf.expr)),, drop=F]
 
@@ -189,7 +189,7 @@ test.step3.ds<-data.frame(logodds=abs(test.logfc_selex.pred), expr.rf = test.var
 test.final_fc_db_rank_selex.pred=predict(step3.las.model, newx = as.matrix(test.step3.ds),type="response")
 
 
-out=cbind(snp.input, data.frame(ref.enhAct=test.db.ref.pred1[,2],alt.enhAct=test.db.mut.pred1[,2], logodds=(test.logfc_selex.pred)), test.step3.ds[,-1], data.frame(gram.prob=test.final_fc_db_rank_selex.pred[,1]))
+out=cbind(snp.input, data.frame(ref.enhAct=test.db.ref.pred1[,2],alt.enhAct=test.db.mut.pred1[,2], logodds=(test.logfc_selex.pred)), expr.modifier=test.step3.ds$expr.rf,binding.modifier=test.step3.ds$vodds.rf,  data.frame(gram.prob=test.final_fc_db_rank_selex.pred[,1]))
 
 
 write.table(out, file=outfile, quote=F, row.names=F, col.names=T)
