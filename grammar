@@ -1,0 +1,291 @@
+#!/bin/bash
+
+###use fine.mapping.prad as example
+##bed7: chr st ed ref mut  sample-id  rsid
+
+
+
+
+####################################################################################################
+##PATHS required for the running, DO NOT CHANGE VARIABLE *NAMES* 
+genome=
+gencode=
+dpath=
+path_funseq=
+####################################################################################################
+
+
+usage="GRAMMAR v1.0: pipeline for expression modulating effect prediction.\n
+requirement: add path of tabix, intersectBed(bedtools) and fastaFromBed to PATH variable.\n
+The output directory will be the same as input variant file\n
+options:\n
+        \t-h show help text\n
+        \t-i input variant bed file\n
+        \t-e input gene expression file\n
+        \n"
+
+bed7=
+geneExpr=
+
+
+test=0
+##full path of grammer
+grammarPath=$(dirname `realpath $0`)
+
+while getopts "hi:e:t" option
+do
+    case "${option}"
+    in
+        h) echo -e "$usage"
+           exit 1
+           ;;
+        i) bed7=${OPTARG};;
+        e) geneExpr=${OPTARG};;
+        #o) outdir=$OPTARG;;
+        t) test=1;;
+        *) echo -e $usage
+           exit 1
+    esac
+done
+
+
+
+if [[ $test == 1 ]]
+then
+    genome=~/scratch/m4/costseq/hg19.fa   ###skltmp/tl/gram/hg19.fa  todo #\CHANGE MANUALLY
+    gencode=/ysm-gpfs/pi/gerstein/from_louise/skltmp/tl/gram/gencode/gencode.v19.cds.bed #\CHANGE 
+    path_funseq=/ysm-gpfs/pi/gerstein/from_louise/skltmp/hg19
+    dpath=/gpfs/ysm/home/sl2373/tools/deepbind
+    bed7=~/Upscratch/skltmp/tl/gram/grammar.test/snptest.bed
+    geneExpr=~/Upscratch/skltmp/tl/gram/grammar.test/gexpr.test.bed
+fi
+
+
+
+if [[ -z $bed7 || -z $geneExpr  ]]
+then
+    echo -e $usage
+    exit 1
+fi
+
+echo "GRAMMAR: parameter parsing done"
+echo "GRAMMAR: input variant bed file: $bed7"
+echo "GRAMMAR: input gene expression file: $geneExpr"
+
+
+
+##checking command
+
+command -v tabix >/dev/null 2>&1 || { echo >&2 "GRAMMAR: tabix is not found. Aborting."; exit 2; }
+command -v intersectBed >/dev/null 2>&1 || { echo >&2 "GRAMMAR: intersectBed is not found. Aborting."; exit 2; }
+command -v fastaFromBed >/dev/null 2>&1 || { echo >&2 "GRAMMAR: fastaFromBed is not found. Aborting."; exit 2; }
+
+echo "GRAMMAR: checking dependacy done"
+
+
+
+
+###check Funseq score
+if [[ ! -e $path_funseq ]]
+then
+    echo "FunSeq whole genome score file does not exists"
+    exit 2
+fi
+
+###check deepbind
+if [[ ! -e $dpath/deepbind || ! -e $dpath/db/params ]]
+then
+    echo "deepbind does not exists, you just give deepbind folder path, no need include deepbind binary name"
+    exit 2
+fi
+
+
+
+for x in 14 20 24 32 36;
+do
+    if [[ ! -e $dpath/len$x.ids ]]
+    then
+        echo "GRAMMAR: copy DeepBind model config list $grammarPath/len$x.ids to DeepBind Path $dpath"
+
+        cp $grammarPath/len$x.ids $dpath/
+    fi
+done
+
+
+if [[ ! -e $genome || ! -e $gencode ]]
+then
+    echo "Genome fasta or genecode CDS annotation does not exists"
+    exit 2;
+fi
+
+echo "GRAMMAR: checking genome fasta and gencode annotation configs done"
+
+echo "--------------------------------------------------"
+echo "GRAMMAR: Files checking done"
+echo "=================================================="
+
+
+####################################################################################################
+##part0: filter variants
+
+##todo: check the remaining lines (error then return)
+##todo: filter to only keep snv 
+seqdir=$(dirname `realpath $bed7`)
+seqname=$(basename `realpath $bed7`)
+out=$seqname.out
+if [[ ! -e "$seqdir/$seqname.out" ]]
+then
+    mkdir $seqdir/$seqname.out
+fi
+
+
+cd $seqdir
+
+echo "GRAMMAR: Filtering non-coding SNVs only. InDels will also be removed."
+
+cat $bed7 |perl -lane 'if (length($F[3])==1 && length($F[4])==1 && $F[3]=~/(A|T|G|C)/i && $F[4]=~/(A|T|G|C)/i){print;}'  | intersectBed -a stdin -b $gencode -wa -v > nc.var.bed
+
+if [[ $(cat nc.var.bed|wc -l) == 0 ]]
+then
+    echo "No non-coding SNV left after filtering, exiting ... "
+    exit 3
+fi
+
+echo "--------------------------------------------------"
+echo "GRAMMAR: SNP filtering done"
+echo "=================================================="
+
+####################################################################################################
+###
+echo "GRAMMAR: Running Deepbind on the selected genomic regions.."
+bed7filtered=nc.var.bed
+###generate a unique snp file in case that multiple samples share the same mutations
+###sample id will 
+cat $bed7filtered |cut -f1-5,7|sort|uniq > snp.4deepbind.bed
+
+##doing the deep bind scoring
+##Deepbind we used in our study is: deepbind-v0.11-linux.tgz, please 
+##Deepbind: we generate lists of deepbind models with different size according the model screening window size (n), the sequence length we will extract is 2n-1, to make sure all the scanning window will cover the mutation site.
+echo "GRAMMAR: Preparing input sequences for DeepBind score calculation. Please make sure you have added a correct DeepBind path and also put the parameter file db/params in the correct folder."
+fin=snp.4deepbind.bed
+for x in 14 20 24 32 36;
+do
+    export x2=$x;
+    more $fin | perl -lane 'print "$F[0]\t".($F[1]-$ENV{x2}+1)."\t".($F[1]+$ENV{x2})."\t$F[3]\t$F[4]";' >  $fin.deepbind_len$x.bed;
+
+    fastaFromBed -fi $genome -bed $fin.deepbind_len$x.bed -fo $fin.deepbind_len$x.fa -tab ;
+    cat $fin.deepbind_len$x.fa |cut -f2 > $fin.deepbind_len$x.ref.fasta;
+    
+    paste -d\   $fin.deepbind_len$x.ref.fasta $fin.deepbind_len$x.bed |perl -lane 'if (uc(substr($F[0], $ENV{x2}-1,1)) eq uc($F[4])){
+#print "<$F[0]:$F[4]";
+$nf0=substr($F[0], 0, $ENV{x2}-1).$F[5].substr($F[0], $ENV{x2});
+  print "$nf0";
+}else{print ">Error:$_"; }' >  $fin.deepbind_len$x.mut.fasta ;
+
+done
+
+
+echo "GRAMMAR: Runing Deepbind now. It may takes long time if your SNV input list is very long"
+echo "GRAMMAR: cd $dpath"
+cd $dpath
+refstr="";
+mutstr="";
+
+for x in 14 20 24 32 36;
+do
+    ./deepbind len$x.ids < $seqdir/$fin.deepbind_len$x.ref.fasta  > $seqdir/ref.db$x.out ;
+    ./deepbind len$x.ids < $seqdir/$fin.deepbind_len$x.mut.fasta  > $seqdir/mut.db$x.out ;
+    refstr="$refstr ref.db$x.out" ;
+    mutstr="$mutstr mut.db$x.out";
+done
+
+
+echo "GRAMMAR: cd $seqdir"
+cd $seqdir;
+
+
+paste -d$'\t'  $refstr > ref.db.out
+paste -d$'\t'  $mutstr > mut.db.out
+
+
+rm $fin.deepbind_len*fasta $fin.deepbind_len*fa $fin.deepbind_len*.bed
+rm *.db14.out *.db20.out *.db24.out *.db32.out *.db36.out
+
+echo "GRAMMAR: checking DeepBind output... "
+refcnt=`grep ">Error" ref.db.out |wc -l`
+mutcnt=`grep ">Error" mut.db.out |wc -l`
+
+if [[ ${refcnt} > 0 || $mutcnt > 0 || $(cat ref.db.out |wc -l) != $(cat mut.db.out|wc -l) ]]
+then
+    echo "Something wrong in the extracted fasta sequences, please check whether it is the same version of genome between SNV input file and genome file, or your input fasta is wrong"
+    exit 2
+fi
+
+echo "--------------------------------------------------"
+echo "GRAMMAR: Deepbind score prediction done"
+echo "=================================================="
+
+
+####################################################################################################
+####part 2: prediction, integrate gram.predict.r
+echo "Step 2: Running GRAM predictor."
+
+ncvarfin=$seqdir/$fin
+refdpfin=$seqdir/ref.db.out
+mutdpfin=$seqdir/mut.db.out
+echo "GRAMMAR: cd $grammarPath"
+cd $grammmarPath
+echo "GRAMMAR: Rscript $grammarPath/gram.predict.r $refdpfin $mutdpfin $bed7filtered $ncvarfin $geneExpr $grammarPath/model.rdata $seqdir/$seqname.out/gram.score.txt"
+
+Rscript $grammarPath/gram.predict.r $refdpfin $mutdpfin $seqdir/$bed7filtered $ncvarfin $geneExpr $grammarPath/model.rdata $seqdir/$seqname.out/gram.score.txt
+if [[ $? > 0 ]]
+then
+    echo "GRAMMAR: GRAM score prediction error!"
+    exit 3
+fi
+
+echo -e "GRAMMAR: Prediction results have been saved in $seqdir/$seqname.out\n\n"
+
+echo "--------------------------------------------------"
+echo "GRAMMAR: the prediction of GRAM score  done"
+echo "=================================================="
+
+
+
+####################################################################################################
+##part3: visualization for the output from the same LD haploRegion
+echo "GRAMMAR: Visualizing results."
+
+# Get Funseq score
+echo "GRAMMAR: Getting Funseq score for the variants."
+
+> $seqdir/$seqname.out/funseq.score.txt
+while read line
+do
+    chr=`echo $line | awk '{print $1}'`
+    st=`echo $line | awk '{print $2}'`
+    ed=`echo $line | awk '{print $3}'`
+    ref=`echo $line | awk '{print $4}'`
+    var=`echo $line | awk '{print $5}'`
+    tabix -p bed ${path_funseq}/hg19_score.funseq216.bed.bgz ${chr}:${st}-${ed} | awk -v s=$ed '{if($3==s) print $0}' | awk -v s=$st -v f=$ref -v v=$var '{n=split($5,a,"|");for(i=1;i<=n;i++){if((a[i]==v && $4==f) || (a[i]==f && $4==v)) print $0}}'>> $seqdir/$seqname.out/funseq.score.txt
+done < $seqdir/$seqname.out/gram.score.txt
+
+
+# Plot
+mkdir $seqdir/$seqname.out/figure
+mkdir $seqdir/$seqname.out/figure/trackplot
+Rscript $grammarPath/gram.plot.r $seqdir/$seqname.out/gram.score.txt $seqdir/$seqname.out/funseq.score.txt $seqdir/$seqname.out
+
+
+if [[ $? > 0 ]]
+then
+    echo "GRAMMAR: plotting error!"
+    exit 3
+fi
+
+
+echo "--------------------------------------------------"
+echo "GRAMMAR: Results visualization done"
+echo "=================================================="
+echo "GRAMMAR: your job is done. please go to $seqdir/$seqname.out to find your results."
+echo "=================================================="
