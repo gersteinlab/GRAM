@@ -2,9 +2,8 @@
 GRAM: A GeneRAlized Model to predict the molecular effect of a non-coding variant in a cell type-specific manner
 
 
-=Variant Prioritization=
 
-==A. Dependencies==
+##A. Dependencies==
 The following tools are required: <br>
 * sed, awk, grep <br>
 * [http://tools.genes.toronto.edu/deepbind/ DeepBind] (version deepbind-v0.11) <br>
@@ -12,15 +11,15 @@ The following tools are required: <br>
 * [http://sourceforge.net/projects/samtools/files/tabix/ tabix] (version tabix-0.2.6 and up) <br>
 *  [http://www.r-project.org/ R] (require packages: andomForest, glmnet, reshape2, gplots) <br>
 
-==B. Tool Download==
+##B. Tool Download
 
 This is a  Linux/UNIX-based tool. At the command-line prompt, type the following. 
  $ git clone https://github.com/gersteinlab/GRAM.git
 
-==C. Pre-built Data Context==
+##C. Pre-built Data Context
 All of the data can be downloaded under ‘Downloads’ in the Funseq3 web server (http://funseq3.gersteinlab.org/). 
 
-==D. Tool Usage==
+##D. Tool Usage
  $ cd gram/
 
 
@@ -37,7 +36,7 @@ To display the usage of tool, type ‘./grammar.sh -h’. <br>
 -i : Required format: chr st ed ref mut sample-id rsid<br>
 -e: The rows correspond to genes and columns correspond to samples. Sample ids need to match with those in the variant bed file. <br>
 
-==E. Input files==
+##E. Input files
 * User input SNV file (-i): BED format 
  
 In addition to the three required BED fields, please prepare your files as following (5 required fields, tab delimited; 
@@ -66,7 +65,7 @@ e.g.
         A1CF	20	9	0	23	…
         …	…	…	…	…	…
 
-==F. Output files==
+##F. Output files
 Five output files will be generated: ‘Output.format’, ‘Output.indel.format’, ‘Recur.Summary’, ‘Candidates.Summary’ and ‘Error.log’. Output.format: stores detailed results for all samples; Output.indel.format: contains results for indels; Recur.Summary: the recurrence result when having multiple samples; Candidates.Summary: brief output of potential candidates (coding nonsynonymous/prematurestop variants, non-coding variants with score (>= 5 of un-weighted scoring scheme and >=1.5 for weighted scoring scheme) and variants in or associated with known cancer genes); Error.log: error information. For un-weighted scoring scheme, each feature is given value 1. 
 
 When provided with gene expression files, two additional files will be produced – ‘DE.gene.txt’ stores differentially expressed genes and ‘DE.pdf ’is the differential gene expression plot. 
@@ -94,7 +93,7 @@ Columns:
         13: (score) predicted GRAM score
 
 
-=Contact=
+##Contact
 shaoke DOT lou AT yale DOT edu
 
 This software is freely licensed under the Creative Commons license (Attribution-NonCommerical). The main aspects of this license are that: The work can be made available for non-commercial use Derivatives can be made of the work Derivatives do not have to be made available under the same terms that they were first used, and We should be cited.
