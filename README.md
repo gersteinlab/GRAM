@@ -15,7 +15,11 @@ This is a  Linux/UNIX-based tool. At the command-line prompt, type the following
  $ git clone https://github.com/gersteinlab/GRAM.git
 
 ## C. Pre-built Data Context
-All of the data can be downloaded under ‘Downloads’ in the Funseq3 web server (http://funseq3.gersteinlab.org/). 
+Before you run grammar, you must provide some information in grammar scripts:<br>
+genome=<path of genome fasta file>, chromomosome name should start with 'chr'> <br>
+gencode=<gene code cds bed>, we have provide hg19 gencode cds file with this repo, just decompress it <br>
+dpath=<deepbind folder >, deepbind fold should include 'db' and 'db/params', which are the parameters for TF binding models <br>
+path_funseq=<funseq whole score>. it can be downloaded under ‘Downloads’ in the Funseq3 web server (http://funseq3.gersteinlab.org/). <br>
 
 ## D. Tool Usage
  $ cd gram/
@@ -26,7 +30,7 @@ To display the usage of tool, type ‘./grammar -h’. <br>
         Options :<br>
                 	-i		[Required] User Input SNVs file (BED format: chr st ed ref mut sample-id rsid)<br>
                 	-e	 	[Required] User Input gene expression matrix <br>
-                  -h     help message <br>
+                 -h     help message <br>
              
                 	
                 	NOTE: Please make sure you have sufficient memory, at least 3G.
