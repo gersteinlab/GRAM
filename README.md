@@ -15,7 +15,7 @@ This is a  Linux/UNIX-based tool. At the command-line prompt, type the following
  $ git clone https://github.com/gersteinlab/GRAM.git
 
 ## C. Pre-built Data Context
-Before you run grammar, you must provide some information in grammar scripts:<br>
+Before you run grammar, you must <b>edit grammar script</b> and provide some information:<br>
 genome=<path of genome fasta file>, chromomosome name should start with 'chr'> <br>
 gencode=<gene code cds bed>, we have provide hg19 gencode cds file with this repo, just decompress it <br>
 dpath=<deepbind folder >, deepbind fold should include 'db' and 'db/params', which are the parameters for TF binding models <br>
