@@ -16,10 +16,10 @@ This is a  Linux/UNIX-based tool. At the command-line prompt, type the following
 
 ## C. Pre-built Data Context
 Before you run grammar, you must <b>edit grammar script</b> and provide some information:<br>
-genome=<path of genome fasta file>, chromomosome name should start with 'chr'> <br>
-gencode=<gene code cds bed>, we have provide hg19 gencode cds file with this repo, just decompress it <br>
-dpath=<deepbind folder >, deepbind fold should include 'db' and 'db/params', which are the parameters for TF binding models <br>
-path_funseq=<funseq whole score>. it can be downloaded under ‘Downloads’ in the Funseq3 web server (http://funseq3.gersteinlab.org/). <br>
+genome="path of genome fasta file", chromomosome name should start with 'chr'> <br>
+gencode="gene code cds bed", we have provide hg19 gencode cds file with this repo, just decompress it <br>
+dpath="deepbind folder", deepbind fold should include 'db' and 'db/params', which are the parameters for TF binding models <br>
+path_funseq="funseq whole score". it can be downloaded under ‘Downloads’ in the Funseq3 web server (http://funseq3.gersteinlab.org/). <br>
 
 ## D. Tool Usage
  $ cd gram/
